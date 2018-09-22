@@ -13,12 +13,12 @@ var assert = require('chai').assert
 
 // helper function to test exceptions
 expectThrow = async (promise) => {
-    try {
-        await promise;
-    } catch (err) {
-        return;
-    }
-    assert(false, 'Expected throw not received');
+  try {
+    await promise;
+  } catch (err) {
+    return;
+  }
+  assert(false, 'Expected throw not received');
 }
 
 
@@ -28,14 +28,31 @@ contract('TokenContract', function (walletAddresses) {
   let contract
 
   beforeEach(async function () {
-    contract = await TokenContract.new(100,'Blu Token',1,'BLV')
+    contract = await TokenContract.new(100, 'Blu Token', 1, 'BLV')
   })
 
   it('should create contract', async function () {
     contract.should.exist
+  })
 
-    const balance = await contract.balanceOf(me)
-    balance.should.be.bignumber.equal(new BigNumber(100))
+  it('should not create contract with amount = 0', async function () {
+    let wrongContract = TokenContract.new(0,'Zero',1,'ZRO');
+    await expectThrow(wrongContract)
+  })
+
+  // it('should create contract with amount = |x|', async function () {
+  //   let wrongContract = await TokenContract.new(-3,'Negative',1,'NEG');
+  //   const supply = await wrongContract.totalSupply({from: me})
+  //   supply.should.be.bignumber.equal(new BigNumber(3))
+  // })
+
+  it('should initialize balance correctly', async function () {
+    
+    const myBalance = await contract.balanceOf(me)
+    myBalance.should.be.bignumber.equal(new BigNumber(100))
+
+    const friendBalance = await contract.balanceOf(friend, {from: friend})
+    friendBalance.should.be.bignumber.equal(new BigNumber(0))
   })
 
   it('should transfer(friend,10) correctly from me', async function () {
@@ -45,18 +62,21 @@ contract('TokenContract', function (walletAddresses) {
 
     // transfering 10 BLV to friend
     const amount = 10;
-    await contract.transfer(friend,amount, { from: me })
+    await contract.transfer(friend, amount, { from: me })
 
     // now i should have 90 BLV	
     myBalance = await contract.balanceOf(me)
-    myBalance.should.be.bignumber.equal(new BigNumber(100-amount))
+    myBalance.should.be.bignumber.equal(new BigNumber(100 - amount))
 
     // friend should have 10 BLV
-    let friendBalance = await contract.balanceOf(friend, {from: friend})
-    friendBalance.should.be.bignumber.equal(new BigNumber(amount))	
+    let friendBalance = await contract.balanceOf(friend, { from: friend })
+    friendBalance.should.be.bignumber.equal(new BigNumber(amount))
   })
-  it('should not show me balance of my friend', async function() {
-    let tx = contract.balanceOf(friend, {from: me});
+
+  it('should not show me balance of my friend to me', async function () {
+    let tx = contract.balanceOf(friend, { from: me });
     await expectThrow(tx);
   })
+
+
 })
