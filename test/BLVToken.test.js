@@ -73,10 +73,25 @@ contract('TokenContract', function (walletAddresses) {
     friendBalance.should.be.bignumber.equal(new BigNumber(amount))
   })
 
-  it('should not show me balance of my friend to me', async function () {
+  it('should not show me balance of my friend', async function () {
     let tx = contract.balanceOf(friend, { from: me });
     await expectThrow(tx);
   })
 
+  it('should not transfer to address(0)', async function () {
+    const tx = contract.transfer(0,10,{from: me});
+    await  expectThrow(tx);
+  })
 
+  it('should not show allowance to other callers', async function () {
+    const tx = contract.allowance(me,friend,{from: friend})
+    await expectThrow(tx);
+  })
+
+  it('should change {allowed[me][friend]} correctly', async function () {
+    const tx = contract.approve(friend,20,{from: me});
+    let allowance = await contract.allowance(me,friend,{from: me})
+
+    allowance.should.be.bignumber.equal(new BigNumber(20));
+  })
 })

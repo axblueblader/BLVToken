@@ -21,6 +21,6 @@ npm install -g truffle
 ## RUN
 - Run a blockchain
 - Add network information to truffle.js
-- Run `truffle migrate -network <network name>'`
+- Run `truffle migrate -network <network name>`
 - Run `truffle deploy`
 - Use a wallet to test it

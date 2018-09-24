@@ -42,6 +42,8 @@ contract BLVToken is EIP20Interface{
         return true;
     }
 
+    // TODO: intialize allowed[owner][owner] or check for it before "transferFrom"
+
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
         uint256 allowance = allowed[_from][msg.sender];
         require(balances[_from] >= _value && allowance >= _value);
