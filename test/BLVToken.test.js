@@ -40,12 +40,6 @@ contract('TokenContract', function (walletAddresses) {
     await expectThrow(wrongContract)
   })
 
-  // it('should create contract with amount = |x|', async function () {
-  //   let wrongContract = await TokenContract.new(-3,'Negative',1,'NEG');
-  //   const supply = await wrongContract.totalSupply({from: me})
-  //   supply.should.be.bignumber.equal(new BigNumber(3))
-  // })
-
   it('should initialize balance correctly', async function () {
     
     const myBalance = await contract.balanceOf(me)
@@ -73,6 +67,15 @@ contract('TokenContract', function (walletAddresses) {
     friendBalance.should.be.bignumber.equal(new BigNumber(amount))
   })
 
+  it('should transfer to yourself correctly', async function () {
+    let myBalance = await contract.balanceOf(me);
+    myBalance.should.be.bignumber.equal(new BigNumber(100));
+
+    await contract.transfer(me,100,{from: me});
+    let myNewBalance = await contract.balanceOf(me);
+    myNewBalance.should.be.bignumber.equal(new BigNumber(myBalance));
+  })
+
   it('should not show me balance of my friend', async function () {
     let tx = contract.balanceOf(friend, { from: me });
     await expectThrow(tx);
@@ -89,9 +92,49 @@ contract('TokenContract', function (walletAddresses) {
   })
 
   it('should change {allowed[me][friend]} correctly', async function () {
-    const tx = contract.approve(friend,20,{from: me});
+    const tx = await contract.approve(friend,20,{from: me});
     let allowance = await contract.allowance(me,friend,{from: me})
 
     allowance.should.be.bignumber.equal(new BigNumber(20));
   })
+
+  it('should not allow more than owner balance', async function () {
+    const tx = contract.allowance(friend,101,{from: me});
+    await expectThrow(tx);
+  })
+
+  it('should allow delegate to transfer', async function () {
+    await contract.approve(friend,20,{from: me});
+
+    let friend2 = walletAddresses[2];
+    await contract.transferFrom(me,friend2,10,{from: friend});
+
+    let friend2Balance = await contract.balanceOf(friend2,{from: friend2});
+    friend2Balance.should.be.bignumber.equal(new BigNumber(10));
+
+    let friendBalance = await contract.balanceOf(friend,{from: friend});
+    friendBalance.should.be.bignumber.equal(new BigNumber(0));
+
+    let myBalance = await contract.balanceOf(me,{from: me});
+    myBalance.should.be.bignumber.equal(new BigNumber(90));
+  })
+
+  it('should not allow delegate to transfer more than allowance',async function () {
+    await contract.approve(friend,20,{from: me});
+
+    let friend2 = walletAddresses[2];
+    const tx = contract.transferFrom(me,friend2,21,{from: friend});
+
+    await expectThrow(tx);
+  })
+
+  it('should not allow delegate to transfer more than owner balance', async function () {
+    await contract.approve(friend,101,{from: me});
+
+    let friend2 = walletAddresses[2];
+    const tx = contract.transferFrom(me.friend2,101,{from: friend});
+
+    await expectThrow(tx);
+  })
 })
+
