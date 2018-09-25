@@ -49,6 +49,10 @@ contract BLVToken is EIP20Interface, Ownable{
         disabledTransfer = true;
     }
 
+    function selfDestruct() public onlyOwner {
+        selfdestruct(msg.sender);
+    }
+
     function transfer(address _to, uint256 _value) canTransfer public returns (bool success) {
         require(balances[msg.sender] >= _value);
         require(_to != address(0));

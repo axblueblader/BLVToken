@@ -15,7 +15,7 @@ var assert = require('chai').assert
 const expectThrow = require('./throwhelper.js');
 
 
-contract('TokenContract', function (walletAddresses) {
+contract('TokenContract - test creation and transfering', function (walletAddresses) {
   let me = walletAddresses[0]
   let friend = walletAddresses[1]
   let contract
@@ -24,9 +24,9 @@ contract('TokenContract', function (walletAddresses) {
     contract = await TokenContract.new(100, 'Blu Token', 1, 'BLV')
   })
 
-  // afterEach(async function () {
-  //   await contract.selfDestruct({ from: me });
-  // })
+  afterEach(async function () {
+    await contract.selfDestruct({ from: me });
+  })
 
   it('should create contract', async function () {
     contract.should.exist
@@ -133,7 +133,5 @@ contract('TokenContract', function (walletAddresses) {
 
     await expectThrow(tx);
   })
-
-
 })
 

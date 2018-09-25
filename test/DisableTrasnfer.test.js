@@ -15,7 +15,7 @@ var assert = require('chai').assert
 const expectThrow = require('./throwhelper.js');
 
 
-contract('TokenContract', function (walletAddresses) {
+contract('TokenContract - test en/dis-abling transfering', function (walletAddresses) {
     let me = walletAddresses[0]
     let friend = walletAddresses[1]
     let contract
@@ -24,9 +24,9 @@ contract('TokenContract', function (walletAddresses) {
         contract = await TokenContract.new(100, 'Blu Token', 1, 'BLV')
     })
 
-    // afterEach(async function () {
-    //     await contract.selfDestruct({ from: me });
-    // })
+    afterEach(async function () {
+        await contract.selfDestruct({ from: me });
+    })
 
     it('should have owner = me', async function() {
         let owner = await contract.owner();
@@ -53,6 +53,6 @@ contract('TokenContract', function (walletAddresses) {
         const tx = contract.disableTransfering({from: friend});
         await expectThrow(tx);
         const tx2 = contract.enableTransfering({from: friend});
-        await expectThrow(tx);
+        await expectThrow(tx2);
     })
 })
