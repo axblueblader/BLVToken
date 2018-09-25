@@ -2,12 +2,14 @@ pragma solidity 0.4.24;
 
 import "./EIP20Interface.sol";
 import "./SafeMath.sol";
+import "./Ownable.sol";
 
-contract BLVToken is EIP20Interface{
+contract BLVToken is EIP20Interface, Ownable{
     using SafeMath for uint256; // perform checks when doing math
     
     mapping (address => uint256) private balances;
     mapping (address => mapping (address => uint256)) private allowed;
+    bool disabledTransfer;
     /*
     NOTE:
     The following variables are OPTIONAL vanities. One does not have to include them.
@@ -30,9 +32,24 @@ contract BLVToken is EIP20Interface{
         name = _tokenName;                                   // Set the name for display purposes
         decimals = _decimalUnits;                            // Amount of decimals for display purposes
         symbol = _tokenSymbol;                               // Set the symbol for display purposes
+        owner = msg.sender;
+        disabledTransfer = false;
     }
     
-    function transfer(address _to, uint256 _value) public returns (bool success) {
+    modifier canTransfer {
+        require(disabledTransfer == false);
+        _;
+    }
+
+    function enableTransfering() onlyOwner public {
+        disabledTransfer = false;
+    }
+
+    function disableTransfering() onlyOwner canTransfer public {
+        disabledTransfer = true;
+    }
+
+    function transfer(address _to, uint256 _value) canTransfer public returns (bool success) {
         require(balances[msg.sender] >= _value);
         require(_to != address(0));
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -44,7 +61,7 @@ contract BLVToken is EIP20Interface{
 
     // TODO: intialize allowed[owner][owner] or check for it before "transferFrom"
 
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _value) canTransfer public returns (bool success) {
         uint256 allowance = allowed[_from][msg.sender];
         require(balances[_from] >= _value && allowance >= _value);
         balances[_to] = balances[_to].add(_value);
