@@ -7,7 +7,7 @@ var expect = require('chai').expect
 var assert = require('chai').assert
 
 // helper function to test exceptions
-const expectThrow = require('./throwhelper.js');
+const expectThrow = require('./helper/throwhelper.js');
 
 contract('OwnableContract', function (walletAddresses) {
     let me = walletAddresses[0]
@@ -32,12 +32,18 @@ contract('OwnableContract', function (walletAddresses) {
     it('should transfer ownership to friend when called by me(owner)', async function () {
         await contract.trasnferOwnership(friend, { from: me });
         let owner = await contract.owner();
-        owner.should.equal(friend);
+        owner.should.equal(friend);  
+    })
+
+    it('should fire OwnershipChanged event', async function () {
+        let tx = await contract.trasnferOwnership(friend,{from: me});
+        assert(tx.logs.length >0 && tx.logs[0].event == 'OwnershipChanged');
     })
 
     it('should not transfer ownership to friend when called by friend', async function () {
         const tx = contract.trasnferOwnership(friend, { from: friend });
         await expectThrow(tx);
     })
+
 
 })

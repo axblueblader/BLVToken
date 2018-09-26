@@ -10,6 +10,9 @@ contract BLVToken is EIP20Interface, Ownable{
     mapping (address => uint256) private balances;
     mapping (address => mapping (address => uint256)) private allowed;
     bool disabledTransfer;
+
+    event TransferDisabled(address _by);
+    event TransferEnabled(address _by);
     /*
     NOTE:
     The following variables are OPTIONAL vanities. One does not have to include them.
@@ -43,17 +46,19 @@ contract BLVToken is EIP20Interface, Ownable{
 
     function enableTransfering() onlyOwner public {
         disabledTransfer = false;
+        emit TransferEnabled(msg.sender);
     }
 
-    function disableTransfering() onlyOwner canTransfer public {
+    function disableTransfering() public  onlyOwner canTransfer {
         disabledTransfer = true;
+        emit TransferDisabled(msg.sender);
     }
 
     function selfDestruct() public onlyOwner {
         selfdestruct(msg.sender);
     }
 
-    function transfer(address _to, uint256 _value) canTransfer public returns (bool success) {
+    function transfer(address _to, uint256 _value) public canTransfer returns (bool success) {
         require(balances[msg.sender] >= _value);
         require(_to != address(0));
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -65,7 +70,7 @@ contract BLVToken is EIP20Interface, Ownable{
 
     // TODO: intialize allowed[owner][owner] or check for it before "transferFrom"
 
-    function transferFrom(address _from, address _to, uint256 _value) canTransfer public returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _value) public canTransfer  returns (bool success) {
         uint256 allowance = allowed[_from][msg.sender];
         require(balances[_from] >= _value && allowance >= _value);
         balances[_to] = balances[_to].add(_value);

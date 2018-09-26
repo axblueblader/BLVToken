@@ -12,7 +12,7 @@ var expect = require('chai').expect
 var assert = require('chai').assert
 
 // helper function to test exceptions
-const expectThrow = require('./throwhelper.js');
+const expectThrow = require('./helper/throwhelper.js');
 
 
 contract('TokenContract - test en/dis-abling transfering', function (walletAddresses) {
@@ -37,6 +37,16 @@ contract('TokenContract - test en/dis-abling transfering', function (walletAddre
         await contract.disableTransfering();
         const tx = contract.transfer(friend,10);
         await expectThrow(tx);
+    })
+
+    it('should fire TransferDisabled event', async function() {
+        let tx = await contract.disableTransfering();
+        assert(tx.logs.length > 0 && tx.logs[0].event == 'TransferDisabled');
+    })
+
+    it('should fire TransferEnabled event', async function() {
+        let tx = await contract.enableTransfering();
+        assert(tx.logs.length > 0 && tx.logs[0].event == 'TransferEnabled');
     })
 
     it('should let me transfer again after enabling', async function() {

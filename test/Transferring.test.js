@@ -12,7 +12,7 @@ var expect = require('chai').expect
 var assert = require('chai').assert
 
 // helper function to test exceptions
-const expectThrow = require('./throwhelper.js');
+const expectThrow = require('./helper/throwhelper.js');
 
 
 contract('TokenContract - test creation and transfering', function (walletAddresses) {
@@ -37,6 +37,7 @@ contract('TokenContract - test creation and transfering', function (walletAddres
     await expectThrow(wrongContract)
   })
 
+
   it('should initialize balance correctly', async function () {
 
     const myBalance = await contract.balanceOf(me)
@@ -44,6 +45,11 @@ contract('TokenContract - test creation and transfering', function (walletAddres
 
     const friendBalance = await contract.balanceOf(friend, { from: friend })
     friendBalance.should.be.bignumber.equal(new BigNumber(0))
+  })
+
+  it('should fire Transfer event in transfer', async function(){
+    let tx = await contract.transfer(friend,10,{from: me});
+    assert(tx.logs.length > 0 && tx.logs[0].event == 'Transfer');
   })
 
   it('should transfer(friend,10) correctly from me', async function () {
@@ -95,6 +101,11 @@ contract('TokenContract - test creation and transfering', function (walletAddres
     allowance.should.be.bignumber.equal(new BigNumber(20));
   })
 
+  it('should fire Approval event', async function() {
+    let tx = await contract.approve(friend,20,{from: me});
+    assert(tx.logs.length > 0 && tx.logs[0].event == 'Approval');
+  })
+
   it('should not allow more than owner balance', async function () {
     const tx = contract.allowance(friend, 101, { from: me });
     await expectThrow(tx);
@@ -114,6 +125,15 @@ contract('TokenContract - test creation and transfering', function (walletAddres
 
     let myBalance = await contract.balanceOf(me, { from: me });
     myBalance.should.be.bignumber.equal(new BigNumber(90));
+  })
+
+  it('should fire Transfer event in transferFrom', async function () {
+    await contract.approve(friend, 20, { from: me });
+
+    let friend2 = walletAddresses[2];
+    let tx = await contract.transferFrom(me, friend2, 10, { from: friend });
+
+    assert(tx.logs.length > 0 && tx.logs[0].event == 'Transfer'); 
   })
 
   it('should not allow delegate to transfer more than allowance', async function () {
