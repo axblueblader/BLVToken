@@ -21,7 +21,6 @@ contract ERC20 is EIP20Interface{
 
     function transfer(address _to, uint256 _value) public returns (bool success) {
         require(balances[msg.sender] >= _value);
-        require(_to != address(0));
         balances[msg.sender] = balances[msg.sender].sub(_value);
         balances[_to] = balances[_to].add(_value);
         
