@@ -2,7 +2,7 @@
 const BigNumber = web3.BigNumber
 
 // artifacts is a global variable, injected by Truffle.js
-const TokenContract = artifacts.require('BLVToken')
+const TokenContract = artifacts.require('StandardToken')
 
 require('chai')
   .use(require('chai-as-promised'))
