@@ -35,8 +35,8 @@ contract TimeLock is Ownable{
     // crowdsale start time
     uint256 private launchTime;
 
-    // define a table for Rates[accType][releaseState] = rate
-    mapping(uint256 => mapping(uint256 => uint256)) public Rates;
+    // define a table for unlockRates[accType][releaseState] = rate
+    mapping(uint256 => mapping(uint256 => uint256)) public unlockRates;
 
     bool public accountChangesDisabled;
 
@@ -79,6 +79,17 @@ contract TimeLock is Ownable{
         // 2 years after crowdsale launch
         stateTime.push(launchTime + 24 * 30 * 1 days);
     }
+    // default of mapping already set to 0
+    function initRates() internal {
+        // KYC 1
+        unlockRates[0][0] = 333;
+        unlockRates[0][3] = 333;
+        unlockRates[0][6] = 334;
+        // OneYear
+        unlockRates[4][7] = 1000;
+        // TwoYear
+        unlockRates[5][8] = 1000;
+    }
 
     function nextState() internal {
         releaseState = releaseState.add(1);
@@ -95,7 +106,7 @@ contract TimeLock is Ownable{
             0,
             _totalLocked
         ));
-        addressIndices[_to] = accounts.length;
+        addressIndices[_to] = accounts.length-1;
         emit AccountAdded(_to,_accType,_totalLocked);
     }
 
@@ -129,13 +140,13 @@ contract TimeLock is Ownable{
         return true;
     }
 
-    function releaseTostringken() public onlyOwner returns (bool) {
+    function releaseToken() public onlyOwner returns (bool) {
 
         require(block.timestamp > stateTime[releaseState]);
 
         for (uint256 index = 0; index < accounts.length; index++) {
-            uint256 rate = Rates[accounts[index].accType][releaseState];
-            accounts[index].claimable = accounts[index].claimable.add(accounts[index].totalLocked.div(rate));
+            uint256 rate = unlockRates[accounts[index].accType][releaseState];
+            accounts[index].claimable = accounts[index].claimable.add((accounts[index].totalLocked.mul(rate)).div(1000));
         }
         
         nextState();
@@ -143,10 +154,34 @@ contract TimeLock is Ownable{
         return true;
     }
 
-    // Viewing function for beneficiary
-    function viewTotalLocked() public view returns (uint256) {
+    function viewAccInfo() public view returns(address,uint256,uint256,uint256) {
         uint256 accIndex = addressIndices[msg.sender];
-        return accounts[accIndex].totalLocked;
+        return (
+            accounts[accIndex].wallet,
+            accounts[accIndex].accType,
+            accounts[accIndex].claimable,
+            accounts[accIndex].totalLocked
+        );
     }
-    
+
+    function getTotalLockedKYC() public returns (uint256){
+        uint256 sum = 0;
+        for (uint256 index = 0; index < accounts.length; index++) {
+            if (accounts[index].accType < 4) {
+                sum = sum.add(accounts[index].totalLocked);
+            }
+        }
+        return sum;
+    }
+
+    function getTotalLockedDistribution() public returns (uint256) {
+        uint256 sum = 0;
+        for (uint256 index = 0; index < accounts.length; index++) {
+            if (accounts[index].accType >= 4) {
+                sum = sum.add(accounts[index].totalLocked);
+            }
+        }
+        return sum;
+    }
+
 }
