@@ -12,6 +12,7 @@ const expectThrow = require('./helper/throwhelper.js');
 contract('OwnableContract', function (walletAddresses) {
     let me = walletAddresses[0]
     let friend = walletAddresses[1]
+    let contract
     beforeEach(async function () {
         contract = await OwnableContract.new();
     })

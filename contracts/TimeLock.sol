@@ -15,22 +15,38 @@ contract TimeLock is Ownable{
     }
 
     EIP20Interface public token;
-    mapping(address=>uint256) addressIndices;
+    mapping(address=>uint256) public addressIndices;
     Beneficiary[] public accounts;
     uint256 public releaseState;
+    uint256[] private stateTime;
+    uint256 private launchTime;
 
     // define a table for Rates[accType][releaseState] = rate
-    mapping(uint256 => mapping(uint256 => uint256)) Rates;
+    mapping(uint256 => mapping(uint256 => uint256)) public Rates;
 
     event AccountAdded(address _to,uint256 _accType, uint256 _totalLocked);
     event AddAccountDisabled();
     event RemoveAccountDisabled();
     event StateChangedTo(uint256 to);
 
-    constructor(address tokenAddress) public {
+    constructor(address tokenAddress, uint256 crowdsaleLaunchTime) public {
         token = EIP20Interface(tokenAddress);
         releaseState = 0;
         owner = msg.sender;
+        launchTime = crowdsaleLaunchTime;
+        //initStateTime();
+    }
+
+    function initStateTime() internal {
+        stateTime[0] = 0;
+        stateTime[1] = launchTime + 30 * 1 days;
+        stateTime[2] = stateTime[1] + 30 * 1 days;
+        stateTime[3] = stateTime[2] + 30 * 1 days;
+        stateTime[4] = stateTime[3] + 30 * 1 days;
+        stateTime[5] = stateTime[4] + 30 * 1 days;
+        stateTime[6] = stateTime[6] + 30 * 1 days;
+        stateTime[7] = launchTime + 365 * 1 days;
+        stateTime[8] = stateTime[7] + 365 * 1 days;
     }
 
     function nextState() internal {
@@ -52,7 +68,7 @@ contract TimeLock is Ownable{
     }
 
     function removeAccount(address _addr) public onlyOwner {
-        require(_addr != address(0));
+        require(_addr != address(0));   
         require( addressIndices[_addr] >= 0 && addressIndices[_addr] < accounts.length);
 
         uint256 accIndex = addressIndices[_addr];
@@ -83,6 +99,8 @@ contract TimeLock is Ownable{
         // all accounts of that type to perform 
         
         // TODO: CHECK TIME CONDITION ALONG WITH STATE
+        require(block.timestamp > stateTime[releaseState]);
+
         for (uint256 index = 0; index < accounts.length; index++) {
             uint256 rate = Rates[accounts[index].accType][releaseState];
             accounts[index].claimable = accounts[index].claimable.add(accounts[index].totalLocked.div(rate));
