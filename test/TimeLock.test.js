@@ -33,4 +33,21 @@ contract('TimeLockContract', function (walletAddresses) {
     it('should exist', async function () {
         contract.should.exist;
     })
+
+    it('should add beneficiary account', async function() {
+        await contract.addAccount(friend,0,100,{from: me});
+        let totalLocked = await contract.viewTotalLocked({from: friend});
+        totalLocked.should.be.bignumber.equal(new BigNumber(100));
+    })
+
+    it('should not let other add beneficiary account', async function() {
+        let tx = await contract.addAccount(friend,0,100,{from: friend});
+        await expectThrow(tx);
+    })
+
+    it('should not let add account after disabled', async function() {
+        await contract.disableAccountAddRemove();
+        let tx = await contract.addAccount(friend,0,100,{from: me});
+        await expectThrow(tx);
+    })
 })

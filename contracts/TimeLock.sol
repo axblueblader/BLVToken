@@ -9,24 +9,39 @@ contract TimeLock is Ownable{
 
     struct Beneficiary {
         address wallet;
+        
+        // KYC1-2-3-4, one year, two year
         uint256 accType;
+
+        // Token that has been unlocked
         uint256 claimable;
+
+        // Amount of locked token that was bought/owned
         uint256 totalLocked;
     }
 
     EIP20Interface public token;
     mapping(address=>uint256) public addressIndices;
+    
+    // array store accounts of beneficiary with locked tokens
     Beneficiary[] public accounts;
+    
+    // keep track which state the timelock is at
     uint256 public releaseState;
+
+    // keep track end time for each state
     uint256[] private stateTime;
+
+    // crowdsale start time
     uint256 private launchTime;
 
     // define a table for Rates[accType][releaseState] = rate
     mapping(uint256 => mapping(uint256 => uint256)) public Rates;
 
+    bool public accountChangesDisabled;
+
     event AccountAdded(address _to,uint256 _accType, uint256 _totalLocked);
-    event AddAccountDisabled();
-    event RemoveAccountDisabled();
+    event AccountChangesDisabled();
     event StateChangedTo(uint256 to);
 
     constructor(address tokenAddress, uint256 crowdsaleLaunchTime) public {
@@ -34,19 +49,35 @@ contract TimeLock is Ownable{
         releaseState = 0;
         owner = msg.sender;
         launchTime = crowdsaleLaunchTime;
-        //initStateTime();
+        accountChangesDisabled = false;
+        initStateTime();
     }
 
     function initStateTime() internal {
-        stateTime[0] = 0;
-        stateTime[1] = launchTime + 30 * 1 days;
-        stateTime[2] = stateTime[1] + 30 * 1 days;
-        stateTime[3] = stateTime[2] + 30 * 1 days;
-        stateTime[4] = stateTime[3] + 30 * 1 days;
-        stateTime[5] = stateTime[4] + 30 * 1 days;
-        stateTime[6] = stateTime[6] + 30 * 1 days;
-        stateTime[7] = launchTime + 365 * 1 days;
-        stateTime[8] = stateTime[7] + 365 * 1 days;
+        stateTime.push(0);
+        // 1 month after crowdsale launch
+        stateTime.push(launchTime + 30 * 1 days);
+
+        // 2 months after crowdsale launch
+        stateTime.push(launchTime + 2 * 30 * 1 days);
+
+        // 3 months after crowdsale launch
+        stateTime.push(launchTime + 3 * 30 * 1 days);
+
+        // 4 months after crowdsale launch
+        stateTime.push(launchTime + 4 * 30 * 1 days);
+
+        // 5 months after crowdsale launch
+        stateTime.push(launchTime + 5 * 30 * 1 days);
+
+        // 6 months after crowdsale launch
+        stateTime.push(launchTime + 6 * 30 * 1 days);
+
+        // 1 year after crowdsale launch
+        stateTime.push(launchTime + 12 * 30 * 1 days);
+
+        // 2 years after crowdsale launch
+        stateTime.push(launchTime + 24 * 30 * 1 days);
     }
 
     function nextState() internal {
@@ -55,13 +86,14 @@ contract TimeLock is Ownable{
 
     function addAccount(address _to,uint256 _accType, uint256 _totalLocked) public onlyOwner {
         require(_to != address(0));
-        require(_accType < 5);
+        require(_accType < 6 && _accType >= 0);
         require(_totalLocked > 0);
+        require(accountChangesDisabled == false);
         accounts.push(Beneficiary(
             _to,
             _accType,
-            _totalLocked,
-            0
+            0,
+            _totalLocked
         ));
         addressIndices[_to] = accounts.length;
         emit AccountAdded(_to,_accType,_totalLocked);
@@ -70,9 +102,15 @@ contract TimeLock is Ownable{
     function removeAccount(address _addr) public onlyOwner {
         require(_addr != address(0));   
         require( addressIndices[_addr] >= 0 && addressIndices[_addr] < accounts.length);
+        require(accountChangesDisabled == false);
 
         uint256 accIndex = addressIndices[_addr];
         accounts[accIndex].totalLocked = 0;
+    }
+
+    function disableAccountAddRemove() public onlyOwner {
+        accountChangesDisabled = true;
+        emit AccountChangesDisabled();
     }
 
     function claimToken() public returns (bool){
@@ -91,24 +129,24 @@ contract TimeLock is Ownable{
         return true;
     }
 
-    function releaseToken() public onlyOwner returns (bool) {
-        // releaseForType1()
-        // releaseForType2()
-        // ...
-        // each releaseForType checks conditions then loop through
-        // all accounts of that type to perform 
-        
-        // TODO: CHECK TIME CONDITION ALONG WITH STATE
+    function releaseTostringken() public onlyOwner returns (bool) {
+
         require(block.timestamp > stateTime[releaseState]);
 
         for (uint256 index = 0; index < accounts.length; index++) {
             uint256 rate = Rates[accounts[index].accType][releaseState];
             accounts[index].claimable = accounts[index].claimable.add(accounts[index].totalLocked.div(rate));
         }
-        // claimable = claimable.add(totalLocked.div(rate));
-        // then fire events
+        
         nextState();
         emit StateChangedTo(releaseState);
         return true;
     }
+
+    // Viewing function for beneficiary
+    function viewTotalLocked() public view returns (uint256) {
+        uint256 accIndex = addressIndices[msg.sender];
+        return accounts[accIndex].totalLocked;
+    }
+    
 }

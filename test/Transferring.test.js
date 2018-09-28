@@ -84,11 +84,6 @@ contract('TokenContract - test creation and transfering', function (walletAddres
     await expectThrow(tx);
   })
 
-  it('should not transfer to address(0)', async function () {
-    const tx = contract.transfer(0, 10, { from: me });
-    await expectThrow(tx);
-  })
-
   it('should not show allowance to other callers', async function () {
     const tx = contract.allowance(me, friend, { from: friend })
     await expectThrow(tx);
